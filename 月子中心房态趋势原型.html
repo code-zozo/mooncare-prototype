@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月子中心 · 房态趋势</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#f5f6fa;color:#333;font-size:13px}
+
+/* 顶部栏 */
+.topbar{display:flex;align-items:center;justify-content:space-between;height:52px;background:linear-gradient(135deg,#d63384,#c2185b);padding:0 20px;color:white;box-shadow:0 2px 8px rgba(214,51,132,.25)}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.logo{font-size:18px;font-weight:700;letter-spacing:1px}
+.topbar-right{display:flex;align-items:center;gap:14px;font-size:12px}
+.avatar-sm{width:26px;height:26px;border-radius:50%;background:#fff;color:#c2185b;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+
+.page{padding:18px 20px;max-width:1600px;margin:0 auto}
+
+/* 查询栏 */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;background:white;padding:12px 18px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);flex-wrap:wrap}
+.filter-bar .label{color:#666;font-size:12px;font-weight:500;white-space:nowrap}
+.filter-bar select,.filter-bar input{padding:7px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;outline:none;transition:all .2s}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#d63384}
+.filter-bar .date-range{display:flex;align-items:center;gap:6px}
+.filter-bar .date-range input{width:130px}
+.filter-bar .spacer{flex:1}
+.filter-bar .btn{padding:7px 16px;border-radius:8px;border:none;font-size:12px;cursor:pointer;font-weight:500;transition:all .2s}
+.filter-bar .btn-main{background:linear-gradient(135deg,#d63384,#c2185b);color:white}
+.filter-bar .btn-main:hover{box-shadow:0 4px 12px rgba(214,51,132,.3)}
+.filter-bar .btn-icon{display:flex;align-items:center;gap:5px}
+
+/* 说明文字 */
+.tips-bar{font-size:12px;color:#888;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.tips-bar .dot-info{width:6px;height:6px;border-radius:50%;background:#d63384;display:inline-block}
+
+/* 房态图主容器 */
+.room-status-card{background:white;border-radius:14px;padding:0;box-shadow:0 1px 6px rgba(0,0,0,.06);overflow:hidden}
+
+/* 房态图表格 */
+.status-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.status-table th{background:#fafafa;color:#666;font-weight:600;padding:10px 8px;text-align:center;border-bottom:2px solid #f0f0f0;white-space:nowrap;position:sticky;top:0;z-index:10}
+.status-table td{padding:0;height:48px;border-bottom:1px solid #f5f5f5;text-align:center;vertical-align:middle;position:relative}
+.status-table td.room-cell{padding:0 12px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;color:#333;position:sticky;left:0;background:white;z-index:5;border-right:1px solid #f0f0f0}
+.status-table td.type-cell{padding:0 12px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#888;position:sticky;left:120px;background:white;z-index:5;border-right:1px solid #f0f0f0}
+.status-table tr:hover td{background:#fafafa}
+.status-table tr:hover td.room-cell,.status-table tr:hover td.type-cell{background:#fafafa}
+
+/* 日期列宽 */
+.col-room{width:120px;min-width:120px}
+.col-type{width:100px;min-width:100px}
+.col-date{width:36px;min-width:36px;max-width:36px}
+
+/* 日期头行 */
+.date-header-row th{background:#f0f0f0;color:#555;font-weight:600;font-size:11px;padding:6px 0;border-right:1px solid #e0e0e0}
+.date-header-row th:first-child,.date-header-row th:nth-child(2){background:#f0f0f0}
+
+/* 状态条——在合并后的td里填满 */
+.status-bar{display:flex;width:100%;height:28px;border-radius:6px;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;cursor:pointer;transition:all .2s}
+.status-bar:hover{filter:brightness(1.1)}
+.status-bar .bar-name{padding:0 4px;flex-shrink:0}
+.status-bar .bar-days{padding:0 4px}
+.status-occupied{background:#d63384}
+.status-booked{background:#ff9800}
+.status-maintenance{background:#9e9e9e}
+.status-overdue{background:#f44336}
+
+/* 今天高亮 */
+.today-mark{background:#fff3e0 !important}
+.today-mark .date-num{color:#d63384;font-weight:700}
+
+/* 图例 */
+.legend-bar{display:flex;align-items:center;gap:20px;margin-top:14px;padding:10px 18px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:12px;color:#666}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-color{width:16px;height:16px;border-radius:4px}
+
+/* 滚动容器 */
+.scroll-wrapper{overflow:auto;max-height:calc(100vh - 240px)}
+.scroll-wrapper::-webkit-scrollbar{width:8px;height:8px}
+.scroll-wrapper::-webkit-scrollbar-thumb{background:#d0d0d0;border-radius:4px}
+.scroll-wrapper::-webkit-scrollbar-track{background:#f5f5f5}
+
+/* tooltip */
+.tooltip{position:fixed;background:#333;color:white;padding:8px 12px;border-radius:8px;font-size:12px;z-index:1000;pointer-events:none;opacity:0;transition:opacity .2s;max-width:220px;line-height:1.6}
+.tooltip.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<div class="topbar-left">
+<div class="logo">🌸 月子中心 · 房态趋势</div>
+</div>
+<div class="topbar-right">
+<span>📍 嘉善县第一人民医院 · 母婴照护二病区</span>
+<span>🕐 2026-04-03</span>
+<div style="display:flex;align-items:center;gap:6px"><div class="avatar-sm">邱</div><span>邱婷艳</span></div>
+</div>
+</div>
+
+<div class="page">
+
+<!-- 查询栏（已去掉门店、房间风格、状态、排序字段、导出按钮） -->
+<div class="filter-bar">
+<div class="date-range">
+<span class="label">📅 时间段</span>
+<input type="date" value="2026-04-03">
+<span>~</span>
+<input type="date" value="2026-04-30">
+</div>
+<span class="label">房型</span>
+<select>
+<option>全部房型</option>
+<option>舒适房</option>
+<option>家居房</option>
+<option>豪华套房</option>
+<option>温馨·亲子房</option>
+</select>
+<span class="label">房号</span>
+<select>
+<option>全部房号</option>
+<option>1021</option>
+<option>1026</option>
+<option>1105</option>
+<option>5005</option>
+<option>516</option>
+<option>6668</option>
+<option>777</option>
+<option>F1111</option>
+<option>F2205</option>
+<option>F2206</option>
+<option>F3301</option>
+<option>F3302</option>
+<option>F5501</option>
+<option>F5502</option>
+</select>
+<div class="spacer"></div>
+<button class="btn btn-main btn-icon">🔍 查询</button>
+</div>
+
+<!-- 说明 -->
+<div class="tips-bar">
+<span class="dot-info"></span>
+<span>不包含超过时间段的超期入住房间和订房房间 · 共展示 28 天（2026-04-03 至 2026-04-30）</span>
+</div>
+
+<!-- 房态图 -->
+<div class="room-status-card">
+<div class="scroll-wrapper">
+<table class="status-table">
+<thead>
+<tr class="date-header-row">
+<th class="col-room">房号</th>
+<th class="col-type">类型</th>
+<th class="col-date">03</th>
+<th class="col-date">04</th>
+<th class="col-date">05</th>
+<th class="col-date">06</th>
+<th class="col-date">07</th>
+<th class="col-date">08</th>
+<th class="col-date">09</th>
+<th class="col-date">10</th>
+<th class="col-date">11</th>
+<th class="col-date">12</th>
+<th class="col-date">13</th>
+<th class="col-date">14</th>
+<th class="col-date">15</th>
+<th class="col-date">16</th>
+<th class="col-date">17</th>
+<th class="col-date">18</th>
+<th class="col-date">19</th>
+<th class="col-date">20</th>
+<th class="col-date">21</th>
+<th class="col-date">22</th>
+<th class="col-date">23</th>
+<th class="col-date">24</th>
+<th class="col-date">25</th>
+<th class="col-date">26</th>
+<th class="col-date">27</th>
+<th class="col-date">28</th>
+<th class="col-date">29</th>
+<th class="col-date">30</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td class="room-cell">1021</td>
+<td class="type-cell">舒适房</td>
+<td colspan="26">
+<div class="status-bar status-occupied" data-info="柳女士 | 已入住 | 2026/04/03 16:12:03 - 2026/04/28 16:12:03">
+<span class="bar-name">柳女士</span>
+<span class="bar-days">(26天)已入住</span>
+</div>
+</td>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td class="room-cell">1026</td>
+<td class="type-cell">舒适房</td>
+<td colspan="12">
+<div class="status-bar status-occupied" data-info="马女士 | 已入住 | 2026/03/18 12:12:13 - 2026/04/14 12:12:13">
+<span class="bar-name">马女士</span>
+<span class="bar-days">(12天)已入住</span>
+</div>
+</td>
+<td colspan="16"></td>
+</tr>
+
+<tr>
+<td class="room-cell">1105</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">5005</td>
+<td class="type-cell">家居房</td>
+<td colspan="28">
+<div class="status-bar status-booked" data-info="张三 | 已预订 | 2026/04/03 0:00:00 - 2026/04/30 0:00:00">
+<span class="bar-name">张三</span>
+<span class="bar-days">(28天)已预订</span>
+</div>
+</td>
+</tr>
+
+<tr>
+<td class="room-cell">516</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">6668</td>
+<td class="type-cell">温馨·亲子房</td>
+<td colspan="28">
+<div class="status-bar status-occupied" data-info="0105 | 已入住 | 2026/01/07 0:00">
+<span class="bar-name">0105</span>
+<span class="bar-days">(超期)已入住</span>
+</div>
+</td>
+</tr>
+
+<tr>
+<td class="room-cell">777</td>
+<td class="type-cell">温馨·亲子房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F1111</td>
+<td class="type-cell">家居房</td>
+<td colspan="28">
+<div class="status-bar status-booked" data-info="测试客1 | 已预订 | 2026/04/03 0:00:00 - 2026/04/30 0:00:00">
+<span class="bar-name">测试客1</span>
+<span class="bar-days">(28天)已预订</span>
+</div>
+</td>
+</tr>
+
+<tr>
+<td class="room-cell">F2205</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F2206</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F3301</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F3302</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F5501</td>
+<td class="type-cell">豪华套房</td>
+<td colspan="28"></td>
+</tr>
+
+<tr>
+<td class="room-cell">F5502</td>
+<td class="type-cell">舒适房</td>
+<td colspan="28"></td>
+</tr>
+
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 图例 -->
+<div class="legend-bar">
+<div class="legend-item"><span class="legend-color" style="background:#d63384"></span>已入住</div>
+<div class="legend-item"><span class="legend-color" style="background:#ff9800"></span>已预订</div>
+<div class="legend-item"><span class="legend-color" style="background:#9e9e9e"></span>维修中</div>
+<div class="legend-item"><span class="legend-color" style="background:#f44336"></span>超期入住</div>
+<div class="legend-item"><span class="legend-color" style="background:#e8f5e9;border:1px solid #c8e6c9"></span>空闲</div>
+</div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, text) {
+tooltip.innerHTML = text;
+tooltip.style.left = (e.clientX + 12) + 'px';
+tooltip.style.top = (e.clientY + 12) + 'px';
+tooltip.classList.add('show');
+}
+function hideTooltip() {
+tooltip.classList.remove('show');
+}
+
+function initTooltip() {
+document.querySelectorAll('.status-bar').forEach(bar => {
+bar.addEventListener('mouseenter', e => showTooltip(e, bar.dataset.info));
+bar.addEventListener('mousemove', e => showTooltip(e, bar.dataset.info));
+bar.addEventListener('mouseleave', hideTooltip);
+});
+}
+initTooltip();
+</script>
+</body>
+</html>
